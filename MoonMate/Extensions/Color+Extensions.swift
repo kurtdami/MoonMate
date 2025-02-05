@@ -12,16 +12,17 @@ extension Color {
     init(uiModel: UIColorModel) {
         switch uiModel {
         case .windowBackground:
-            self = Color(.windowBackgroundColor)
+            // Dark background color
+            self = Color(red: 0.11, green: 0.11, blue: 0.12)
         case .editorText:
-            // More dimmed white for better focus
-            self = Color.white.opacity(0.75)
+            // Bright white text with slight dimming
+            self = Color.white.opacity(0.87)
         case .secondaryText:
-            // Even more dimmed for secondary elements
-            self = Color.white.opacity(0.6)
+            // More dimmed white for secondary elements
+            self = Color.white.opacity(0.7)
         case .dimmedText:
             // Most dimmed for less important elements
-            self = Color.white.opacity(0.45)
+            self = Color.white.opacity(0.5)
         }
     }
 }
@@ -32,8 +33,8 @@ extension Color {
         return Color.white.opacity(alpha)
     }
     
-    // Convenience static properties
-    static let dimmedWhite = Color.white.opacity(0.75)
-    static let moreDimmedWhite = Color.white.opacity(0.6)
-    static let mostDimmedWhite = Color.white.opacity(0.45)
+    // Convenience static properties with adjusted opacities
+    static let dimmedWhite = Color.white.opacity(0.87)
+    static let moreDimmedWhite = Color.white.opacity(0.7)
+    static let mostDimmedWhite = Color.white.opacity(0.5)
 } 

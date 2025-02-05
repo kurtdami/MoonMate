@@ -28,11 +28,13 @@ class DocumentViewModel: ObservableObject {
     }
     
     var backgroundColor: Color {
-        settings.theme == .light ? Color(.windowBackgroundColor) : Color(.black)
+        // Always return the dark background color since we're matching the previous setup
+        return Color(red: 0.11, green: 0.11, blue: 0.12)
     }
     
     var textColor: Color {
-        settings.theme == .light ? Color(white: 0.1) : Color(white: 0.9)
+        // Return the main text color
+        return Color.white.opacity(0.87)
     }
     
     init() {

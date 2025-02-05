@@ -14,6 +14,8 @@ struct EditorView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var searchText: String = ""
     @State private var isSearchVisible: Bool = false
+    @State private var currentMatchIndex: Int = 0
+    @State private var totalMatches: Int = 0
     
     // Add a new property to track window state
     @State private var windowState: WindowState = .normal
@@ -52,6 +54,8 @@ struct EditorView: View {
                         SearchBarView(
                             searchText: $searchText,
                             isVisible: $isSearchVisible,
+                            currentMatch: currentMatchIndex + 1,
+                            totalMatches: totalMatches,
                             onNext: {
                                 textEditorCoordinator?.findNext()
                             },
@@ -139,6 +143,8 @@ struct EditorView: View {
                                         font: .systemFont(ofSize: viewModel.settings.fontSize),
                                         searchText: $searchText,
                                         isSearchVisible: $isSearchVisible,
+                                        currentMatchIndex: $currentMatchIndex,
+                                        totalMatches: $totalMatches,
                                         onCoordinatorCreated: { coordinator in
                                             textEditorCoordinator = coordinator
                                         }

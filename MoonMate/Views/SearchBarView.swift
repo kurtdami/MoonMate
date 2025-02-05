@@ -3,6 +3,8 @@ import SwiftUI
 struct SearchBarView: View {
     @Binding var searchText: String
     @Binding var isVisible: Bool
+    var currentMatch: Int
+    var totalMatches: Int
     var onNext: () -> Void
     var onPrevious: () -> Void
     var onClose: () -> Void
@@ -18,20 +20,25 @@ struct SearchBarView: View {
                     .textFieldStyle(.plain)
                     .focused($isFocused)
                     .onSubmit {
+                        print("Debug: Search submit pressed")
                         onNext()
                     }
-                    .onChange(of: searchText) { _ in
-                        // Trigger search on each character change
-                        if isVisible {
-                            onNext()
-                        }
+                    .onChange(of: searchText) { oldValue, newValue in
+                        print("Debug: Search text changed to: '\(newValue)'")
                     }
                 
                 if !searchText.isEmpty {
+                    // Show match count when there are matches
+                    if totalMatches > 0 {
+                        Text("\(currentMatch) of \(totalMatches)")
+                            .foregroundColor(.secondary)
+                            .font(.system(size: 12))
+                            .padding(.horizontal, 4)
+                    }
+                    
                     Button(action: { 
+                        print("Debug: Clear search text button pressed")
                         searchText = ""
-                        // Trigger search when clearing text
-                        onNext()
                     }) {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(.secondary)
@@ -48,14 +55,14 @@ struct SearchBarView: View {
                     Image(systemName: "chevron.up")
                 }
                 .buttonStyle(.plain)
-                .disabled(searchText.isEmpty)
+                .disabled(searchText.isEmpty || totalMatches == 0)
                 .keyboardShortcut(.return, modifiers: [.shift])
                 
                 Button(action: onNext) {
                     Image(systemName: "chevron.down")
                 }
                 .buttonStyle(.plain)
-                .disabled(searchText.isEmpty)
+                .disabled(searchText.isEmpty || totalMatches == 0)
                 .keyboardShortcut(.return, modifiers: [])
             }
             
@@ -76,6 +83,7 @@ struct SearchBarView: View {
             alignment: .bottom
         )
         .onAppear {
+            print("Debug: SearchBarView appeared")
             isFocused = true
         }
     }
@@ -85,6 +93,8 @@ struct SearchBarView: View {
     SearchBarView(
         searchText: .constant(""),
         isVisible: .constant(true),
+        currentMatch: 1,
+        totalMatches: 5,
         onNext: {},
         onPrevious: {},
         onClose: {}
