@@ -7,6 +7,9 @@ class DocumentViewModel: ObservableObject {
     @Published var selectedDocumentId: UUID?
     @Published var settings = DocumentSettings.default
     @Published var isSidebarVisible = true
+    @Published var isChatSidebarVisible: Bool = false
+    @Published var chatSidebarWidth: CGFloat = 300 // Default width
+    @Published var selectedText: String = ""
     @Published var isEditing: Bool = false
     @Published var showingSidebar: Bool = false
     @Published var error: Error?
@@ -17,6 +20,8 @@ class DocumentViewModel: ObservableObject {
     private let saveQueue = DispatchQueue(label: "com.moonmate.saveQueue")
     private var lastSaveDate = Date()
     private let autoSaveInterval: TimeInterval = 30 // seconds
+    private let minChatSidebarWidth: CGFloat = 250
+    private let maxChatSidebarWidth: CGFloat = 500
     
     var selectedDocument: Document? {
         documents.first { $0.id == selectedDocumentId }
@@ -126,6 +131,10 @@ class DocumentViewModel: ObservableObject {
     func toggleTheme() {
         settings.theme = settings.theme == .light ? .dark : .light
         saveSettings()
+    }
+    
+    func updateChatSidebarWidth(_ width: CGFloat) {
+        chatSidebarWidth = max(minChatSidebarWidth, min(width, maxChatSidebarWidth))
     }
     
     private func loadDocuments() {

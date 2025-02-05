@@ -17,6 +17,7 @@ struct MoonMateApp: App {
                 .frame(minWidth: 600, minHeight: 400)
                 .background(viewModel.backgroundColor)
         }
+        .windowStyle(.hiddenTitleBar)
         .commands {
             CommandGroup(after: .newItem) {
                 Button("Save") {
