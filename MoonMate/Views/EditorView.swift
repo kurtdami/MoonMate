@@ -12,16 +12,9 @@ struct EditorView: View {
     @State private var showFontSizeIndicator: Bool = false
     @State private var fontSizeIndicatorTimer: Timer?
     @Environment(\.scenePhase) private var scenePhase
-    @State private var searchText: String = ""
-    @State private var isSearchVisible: Bool = false
-    @State private var currentMatchIndex: Int = 0
-    @State private var totalMatches: Int = 0
     
     // Add a new property to track window state
     @State private var windowState: WindowState = .normal
-    
-    // Reference to text editor coordinator for search operations
-    @State private var textEditorCoordinator: CustomTextEditor.Coordinator?
 
     enum WindowState {
         case normal
@@ -50,25 +43,6 @@ struct EditorView: View {
         } detail: {
             if let document = viewModel.selectedDocument {
                 VStack(spacing: 0) {
-                    if isSearchVisible {
-                        SearchBarView(
-                            searchText: $searchText,
-                            isVisible: $isSearchVisible,
-                            currentMatch: currentMatchIndex + 1,
-                            totalMatches: totalMatches,
-                            onNext: {
-                                textEditorCoordinator?.findNext()
-                            },
-                            onPrevious: {
-                                textEditorCoordinator?.findPrevious()
-                            },
-                            onClose: {
-                                isSearchVisible = false
-                                searchText = ""
-                            }
-                        )
-                    }
-                    
                     HStack(spacing: 0) {
                         VStack(spacing: 0) {
                             if isFullscreen {
@@ -132,22 +106,14 @@ struct EditorView: View {
                             
                             // Content Area
                             ZStack {
-                                HStack {
-                                    Spacer()
-                                    CustomTextEditor(
+                                VStack {
+                                    SwiftUITextEditor(
                                         text: Binding(
                                             get: { document.content },
                                             set: { viewModel.updateContent($0) }
                                         ),
                                         selectedText: $selectedText,
-                                        font: .systemFont(ofSize: viewModel.settings.fontSize),
-                                        searchText: $searchText,
-                                        isSearchVisible: $isSearchVisible,
-                                        currentMatchIndex: $currentMatchIndex,
-                                        totalMatches: $totalMatches,
-                                        onCoordinatorCreated: { coordinator in
-                                            textEditorCoordinator = coordinator
-                                        }
+                                        font: .system(size: viewModel.settings.fontSize)
                                     )
                                     .focused($isEditorFocused)
                                     .frame(maxWidth: 750)
@@ -158,7 +124,6 @@ struct EditorView: View {
                                             }
                                         }
                                     }
-                                    Spacer()
                                 }
                                 .frame(maxWidth: .infinity)
                                 .background(Color(uiModel: .windowBackground))
@@ -227,14 +192,6 @@ struct EditorView: View {
                         return nil
                     } else if event.characters == "-" {
                         decreaseFontSize()
-                        return nil
-                    } else if event.characters == "f" {
-                        withAnimation {
-                            isSearchVisible.toggle()
-                            if !isSearchVisible {
-                                searchText = ""
-                            }
-                        }
                         return nil
                     }
                 }
