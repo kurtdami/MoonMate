@@ -11,52 +11,88 @@ struct SwiftUITextEditor: View {
     @FocusState private var isFocused: Bool
     
     var body: some View {
-        TextEditor(text: $localText)
-            .font(font)
-            .scrollContentBackground(.hidden)
-            .background(Color.clear)
-            .foregroundColor(Color(uiModel: .editorText))
-            .focused($isFocused)
-            // Handle text changes
-            .onChange(of: localText) { newValue in
-                text = newValue
-            }
-            // Handle external text changes
-            .onChange(of: text) { newValue in
-                if localText != newValue {
-                    localText = newValue
+        ScrollView(.vertical, showsIndicators: false) {
+            TextEditor(text: $localText)
+                .font(font)
+                .scrollContentBackground(.hidden)
+                .scrollDisabled(true)
+                .background(Color.clear)
+                .foregroundColor(Color(uiModel: .editorText))
+                .focused($isFocused)
+                .onChange(of: localText) { newValue in
+                    text = newValue
+                }
+                .onChange(of: text) { newValue in
+                    if localText != newValue {
+                        localText = newValue
+                    }
+                }
+                // Add the selection monitor
+                .background(
+                    TextSelectionMonitor(text: localText, selectedText: $selectedText)
+                )
+        }
+        .modifier(TextEditorAppearanceModifier())
+        .onAppear {
+            localText = text
+        }
+    }
+}
+
+// NSViewRepresentable wrapper for text selection monitoring
+struct TextSelectionMonitor: NSViewRepresentable {
+    let text: String
+    @Binding var selectedText: String
+    
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        context.coordinator.startMonitoring()
+        return view
+    }
+    
+    func updateNSView(_ nsView: NSView, context: Context) {
+        context.coordinator.text = text
+    }
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(text: text, selectedText: $selectedText)
+    }
+    
+    class Coordinator: NSObject {
+        var text: String
+        var selectedText: Binding<String>
+        var observer: NSObjectProtocol?
+        
+        init(text: String, selectedText: Binding<String>) {
+            self.text = text
+            self.selectedText = selectedText
+            super.init()
+        }
+        
+        func startMonitoring() {
+            observer = NotificationCenter.default.addObserver(
+                forName: NSTextView.didChangeSelectionNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self] notification in
+                guard let self = self,
+                      let textView = notification.object as? NSTextView,
+                      textView.string == self.text else { return }
+                
+                let range = textView.selectedRange()
+                if range.length > 0 {
+                    self.selectedText.wrappedValue = (textView.string as NSString).substring(with: range)
+                } else {
+                    self.selectedText.wrappedValue = ""
                 }
             }
-            // Handle selection changes using NSTextView notification
-            .background {
-                GeometryReader { _ in
-                    Color.clear
-                        .onAppear {
-                            // Setup selection change notification
-                            NotificationCenter.default.addObserver(
-                                forName: NSTextView.didChangeSelectionNotification,
-                                object: nil,
-                                queue: .main
-                            ) { notification in
-                                if let textView = notification.object as? NSTextView,
-                                   textView.string == localText {
-                                    let range = textView.selectedRange()
-                                    if range.length > 0 {
-                                        selectedText = (textView.string as NSString).substring(with: range)
-                                    } else {
-                                        selectedText = ""
-                                    }
-                                }
-                            }
-                        }
-                }
+        }
+        
+        deinit {
+            if let observer = observer {
+                NotificationCenter.default.removeObserver(observer)
             }
-            // Add custom modifiers for appearance
-            .modifier(TextEditorAppearanceModifier())
-            .onAppear {
-                // Initialize local text with binding
-                localText = text
-            }
+        }
     }
 }
 
