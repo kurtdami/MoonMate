@@ -42,132 +42,131 @@ struct EditorView: View {
             }
         } detail: {
             if let document = viewModel.selectedDocument {
-                VStack(spacing: 0) {
-                    HStack(spacing: 0) {
-                        ScrollView(.vertical, showsIndicators: true) {
-                            VStack(spacing: 0) {
-                                if isFullscreen {
+                ZStack {  // Outer ZStack for content and indicator
+                    VStack(spacing: 0) {
+                        HStack(spacing: 0) {
+                            // Main content with ScrollView
+                            ScrollView(.vertical, showsIndicators: true) {
+                                VStack(spacing: 0) {
+                                    // Spacer with dynamic height
                                     Spacer()
-                                        .frame(height: 40)
-                                } else {
-                                    Spacer()
-                                        .frame(height: 20)
-                                }
-                                
-                                // Title Field with Chat Toggle
-                                HStack {
-                                    // Left spacer (equal width to right side)
+                                        .frame(height: isFullscreen ? 40 : 20)
+                                    
+                                    // Title Field with Chat Toggle
                                     HStack {
-                                        Spacer()
-                                    }
-                                    .frame(width: 100)
-                                    // Center title
-                                    TextField("Title", text: Binding(
-                                        get: { document.title },
-                                        set: { viewModel.updateTitle($0) }
-                                    ))
-                                    .font(.title)
-                                    .textFieldStyle(.plain)
-                                    .multilineTextAlignment(.center)
-                                    .focused($isTitleFocused)
-                                    .frame(maxWidth: 500)
-                                    .foregroundColor(Color(uiModel: .editorText))
-                                    .onSubmit {
-                                        enterKeyCount += 1
-                                        if enterKeyCount >= 2 {
-                                            isTitleFocused = false
-                                            isEditorFocused = true
-                                            enterKeyCount = 0
+                                        // Left spacer (equal width to right side)
+                                        HStack {
+                                            Spacer()
                                         }
-                                    }
-
-                                    // Right side with chat toggle
-                                    HStack {
-                                        Spacer()
-                                        Button(action: {
-                                            withAnimation {
-                                                viewModel.isChatSidebarVisible.toggle()
+                                        .frame(width: 100)
+                                        // Center title
+                                        TextField("Title", text: Binding(
+                                            get: { document.title },
+                                            set: { viewModel.updateTitle($0) }
+                                        ))
+                                        .font(.title)
+                                        .textFieldStyle(.plain)
+                                        .multilineTextAlignment(.center)
+                                        .focused($isTitleFocused)
+                                        .frame(maxWidth: 500)
+                                        .foregroundColor(Color(uiModel: .editorText))
+                                        .onSubmit {
+                                            enterKeyCount += 1
+                                            if enterKeyCount >= 2 {
+                                                isTitleFocused = false
+                                                isEditorFocused = true
+                                                enterKeyCount = 0
                                             }
-                                        }) {
-                                            Image(systemName: viewModel.isChatSidebarVisible ? "message.fill" : "message")
-                                                .foregroundColor(.secondary)
-                                                .font(.system(size: 18))
                                         }
-                                        .buttonStyle(.plain)
-                                        .padding(8)
-                                        .background(Color(.separatorColor).opacity(0.1))
-                                        .cornerRadius(6)
-                                    }
-                                    .frame(width: 100)
-                                }
-                                .padding(.vertical, 20)
-                                .padding(.horizontal)
-                                .padding(.top, isFullscreen ? 20 : 0)
-                                
-                                // Content Area
-                                ZStack {
-                                    VStack(spacing: 0) {
-                                        SwiftUITextEditor(
-                                            text: Binding(
-                                                get: { document.content },
-                                                set: { viewModel.updateContent($0) }
-                                            ),
-                                            selectedText: $selectedText,
-                                            font: .system(size: viewModel.settings.fontSize)
-                                        )
-                                        .focused($isEditorFocused)
-                                        .onChange(of: selectedText) { oldValue, newSelection in
-                                            if !newSelection.isEmpty && !viewModel.isChatSidebarVisible {
+
+                                        // Right side with chat toggle
+                                        HStack {
+                                            Spacer()
+                                            Button(action: {
                                                 withAnimation {
-                                                    viewModel.isChatSidebarVisible = true
+                                                    viewModel.isChatSidebarVisible.toggle()
+                                                }
+                                            }) {
+                                                Image(systemName: viewModel.isChatSidebarVisible ? "message.fill" : "message")
+                                                    .foregroundColor(.secondary)
+                                                    .font(.system(size: 18))
+                                            }
+                                            .buttonStyle(.plain)
+                                            .padding(8)
+                                            .background(Color(.separatorColor).opacity(0.1))
+                                            .cornerRadius(6)
+                                        }
+                                        .frame(width: 100)
+                                    }
+                                    .padding(.vertical, 20)
+                                    .padding(.horizontal)
+                                    .padding(.top, isFullscreen ? 20 : 0)
+                                    
+                                    // Content Area
+                                    ZStack {
+                                        VStack(spacing: 0) {
+                                            SwiftUITextEditor(
+                                                text: Binding(
+                                                    get: { document.content },
+                                                    set: { viewModel.updateContent($0) }
+                                                ),
+                                                selectedText: $selectedText,
+                                                font: .system(size: viewModel.settings.fontSize)
+                                            )
+                                            .focused($isEditorFocused)
+                                            .onChange(of: selectedText) { oldValue, newSelection in
+                                                if !newSelection.isEmpty && !viewModel.isChatSidebarVisible {
+                                                    withAnimation {
+                                                        viewModel.isChatSidebarVisible = true
+                                                    }
                                                 }
                                             }
                                         }
+                                        .frame(maxWidth: 750)
                                     }
-                                    .frame(maxWidth: 750)
+                                    .background(Color(uiModel: .windowBackground))
+                                    .padding(.vertical)
                                     
-                                    if showFontSizeIndicator {
-                                        VStack {
-                                            Spacer()
-                                            FontSizeIndicatorView(fontSize: viewModel.settings.fontSize, isVisible: $showFontSizeIndicator)
+                                    // Status Bar (only in windowed mode)
+                                    if !isFullscreen {
+                                        HStack {
+                                            if viewModel.settings.showWordCount {
+                                                Text("\(document.wordCount) words")
+                                                    .foregroundColor(Color(uiModel: .dimmedText))
+                                            }
+                                            if viewModel.settings.showCharacterCount {
+                                                Text("\(document.characterCount) characters")
+                                                    .foregroundColor(Color(uiModel: .dimmedText))
+                                            }
                                             Spacer()
                                         }
+                                        .padding(.horizontal)
+                                        .padding(.vertical, 8)
+                                        .background(Color(.separatorColor).opacity(0.1))
                                     }
                                 }
-                                .background(Color(uiModel: .windowBackground))
-                                .padding(.vertical)
-                                
-                                // Status Bar
-                                if !isFullscreen {
-                                    HStack {
-                                        if viewModel.settings.showWordCount {
-                                            Text("\(document.wordCount) words")
-                                                .foregroundColor(Color(uiModel: .dimmedText))
-                                        }
-                                        if viewModel.settings.showCharacterCount {
-                                            Text("\(document.characterCount) characters")
-                                                .foregroundColor(Color(uiModel: .dimmedText))
-                                        }
-                                        Spacer()
-                                    }
-                                    .padding(.horizontal)
-                                    .padding(.vertical, 8)
-                                    .background(Color(.separatorColor).opacity(0.1))
-                                }
+                                .frame(maxWidth: .infinity)
+                            }
+                            .scrollContentBackground(.hidden)
+                            .frame(maxWidth: .infinity)
+                            .clipShape(Rectangle())
+                            
+                            // Chat Sidebar
+                            if viewModel.isChatSidebarVisible {
+                                ChatSidebarView(
+                                    isVisible: $viewModel.isChatSidebarVisible,
+                                    viewModel: viewModel,
+                                    selectedText: selectedText
+                                )
+                                .transition(.move(edge: .trailing))
                             }
                         }
-                        .frame(maxWidth: .infinity)
-                        .clipShape(Rectangle())
-                        
-                        // Chat Sidebar
-                        if viewModel.isChatSidebarVisible {
-                            ChatSidebarView(
-                                isVisible: $viewModel.isChatSidebarVisible,
-                                viewModel: viewModel,
-                                selectedText: selectedText
-                            )
-                            .transition(.move(edge: .trailing))
-                        }
+                    }
+                    
+                    // Font Size Indicator centered in the entire view
+                    if showFontSizeIndicator {
+                        FontSizeIndicatorView(fontSize: viewModel.settings.fontSize, isVisible: $showFontSizeIndicator)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     }
                 }
             } else {
