@@ -6,40 +6,47 @@ struct SwiftUITextEditor: View {
     @Binding var selectedText: String
     let font: Font
     
-    // Local state for text handling
     @State private var localText: String = ""
     @FocusState private var isFocused: Bool
+    @State private var updateTimer: Timer? = nil
     
     var body: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            TextEditor(text: $localText)
-                .font(font)
-                .scrollContentBackground(.hidden)
-                .scrollDisabled(true)
-                .background(Color.clear)
-                .foregroundColor(Color(uiModel: .editorText))
-                .focused($isFocused)
-                .onChange(of: localText) { newValue in
-                    text = newValue
-                }
-                .onChange(of: text) { newValue in
-                    if localText != newValue {
-                        localText = newValue
+        TextEditor(text: $localText)
+            .font(font)
+            .foregroundColor(Color(uiModel: .editorText))
+            .scrollContentBackground(.hidden)
+            .scrollDisabled(true)
+            .scrollIndicators(.hidden)
+            .focused($isFocused)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .frame(minHeight: 0, maxHeight: .infinity, alignment: .top)
+            .background {
+                Color(uiModel: .windowBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .background {
+                TextSelectionMonitor(text: localText, selectedText: $selectedText)
+            }
+            .onChange(of: localText) { _, newValue in
+                guard text != newValue else { return }
+                updateTimer?.invalidate()
+                updateTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: false) { _ in
+                    DispatchQueue.main.async {
+                        text = localText
                     }
                 }
-                // Add the selection monitor
-                .background(
-                    TextSelectionMonitor(text: localText, selectedText: $selectedText)
-                )
-        }
-        .modifier(TextEditorAppearanceModifier())
-        .onAppear {
-            localText = text
-        }
+            }
+            .onChange(of: text) { _, newValue in
+                if !isFocused && localText != newValue {
+                    localText = newValue
+                }
+            }
+            .onAppear { localText = text }
     }
 }
 
-// NSViewRepresentable wrapper for text selection monitoring
+// Selection monitoring
 struct TextSelectionMonitor: NSViewRepresentable {
     let text: String
     @Binding var selectedText: String
@@ -95,30 +102,3 @@ struct TextSelectionMonitor: NSViewRepresentable {
         }
     }
 }
-
-// Custom modifier for text editor appearance
-struct TextEditorAppearanceModifier: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .frame(maxWidth: 750)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(uiModel: .windowBackground))
-                    .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 1)
-            )
-    }
-}
-
-// Preview
-struct SwiftUITextEditor_Previews: PreviewProvider {
-    static var previews: some View {
-        SwiftUITextEditor(
-            text: .constant("Sample text"),
-            selectedText: .constant(""),
-            font: .system(size: 14)
-        )
-        .padding()
-    }
-} 
